@@ -25,7 +25,6 @@ int copiar(char* file, char* destino){
   //printf("PPID: %d\n", getpid());
   int i = start();
   for(; i < size - 1; i++){
-      printf("PPID hijo: %d archivo: %s\n", getpid(), file);
       if(gotQ == 1){
         int fd = open("/dev/null", O_WRONLY);
         dup2(fd, 2);
@@ -63,7 +62,6 @@ int error(char* file){
 int main(int argc, char** argv){
   size = argc;
   int arrayHijos[size];
-  printf("PPID: %d\n", getpid());
   if(strcmp(argv[1], "-f")==0){
     gotF = 1;
   }
@@ -81,9 +79,7 @@ int main(int argc, char** argv){
 
   i = start();
   for(; i < argc - 1; i++){
-    printf("PID: %d\n", arrayHijos[i]);
     waitpid(arrayHijos[i], &arrayHijos[i], 0);
-    printf("Despues PID: %d\n", arrayHijos[i]);
   }
   //FALTA HACER QUE ENVIE TODAS LAS FALLIDAS DE NUEVO
   if(gotR == 1){
@@ -92,7 +88,7 @@ int main(int argc, char** argv){
         while(arrayHijos[i]!=0){
           if(error(argv[i])==-1){
             arrayHijos[i] = 0;
-            break;
+            return -1;
           } else {
             arrayHijos[i] = fork();
             if(arrayHijos[i]==0)copiar(argv[i], argv[argc-1]);
