@@ -17,12 +17,15 @@ int start(){
   return i;
 }
 
-void clear(){
-    while (getchar() != '\n');
+int waitAll(int* arrayHijos){
+  int i = start();
+  for(; i < size-1; i++){
+    waitpid(arrayHijos[i], &arrayHijos[i], 0);
+  }
+  return 0;
 }
 
 int copiar(char* file, char* destino){
-  //printf("PPID: %d\n", getpid());
   int i = start();
   for(; i < size - 1; i++){
       if(gotQ == 1){
@@ -32,7 +35,6 @@ int copiar(char* file, char* destino){
         execlp("cp", "cp", file, destino, NULL);
      }
       if(gotF == 1) {
-        printf("F\n");
         execlp("cp", "cp", "-f", file, destino, NULL);
       }
         execlp("cp", "cp", file, destino, NULL);
@@ -40,8 +42,27 @@ int copiar(char* file, char* destino){
   return 0;
 }
 
-int error(char* file){
-  printf("el fichero %s no se ha copiado, ¿Quiere reintentarlo?[s, n]\n", file);
+int lanzarErrores(int* arrayHijos, int argc, char** argv){
+  int i = start();
+  for(;i < size -1 ; i++){
+    if(arrayHijos[i] != 0){
+      arrayHijos[i] = fork();
+      if(arrayHijos[i] == 0) copiar(argv[i], argv[argc-1]);
+    }
+  }
+  i = start();
+  for(; i < size - 1; i++){
+    waitAll(arrayHijos);
+  }
+  return 0;
+}
+
+void clear(){
+    while (getchar() != '\n');
+}
+
+int error(){
+  printf("Se ha producido un error, ¿Quiere reintentarlo?[s, n]\n");
   char yes;
   yes = getchar();
   if(yes == 's'){
@@ -79,23 +100,21 @@ int main(int argc, char** argv){
 
   i = start();
   for(; i < argc - 1; i++){
-    waitpid(arrayHijos[i], &arrayHijos[i], 0);
+    waitAll(arrayHijos);
   }
-  //FALTA HACER QUE ENVIE TODAS LAS FALLIDAS DE NUEVO
+
   if(gotR == 1){
     i = start();
     for(; i < argc - 1; i++){
-        while(arrayHijos[i]!=0){
-          if(error(argv[i])==-1){
-            arrayHijos[i] = 0;
-            return -1;
-          } else {
-            arrayHijos[i] = fork();
-            if(arrayHijos[i]==0)copiar(argv[i], argv[argc-1]);
-          }
-          waitpid(arrayHijos[i], &arrayHijos[i], 0);
+      if(arrayHijos[i] != 0){
+        if(error()==1){
+          lanzarErrores(arrayHijos, argc, argv);
+          i = start();
+        } else {
+          return -1;
         }
       }
     }
+  }
   return 0;
 }
